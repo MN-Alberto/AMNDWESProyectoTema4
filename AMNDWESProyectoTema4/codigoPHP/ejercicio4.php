@@ -118,122 +118,140 @@
          * Formulario de búsqueda de departamentos por descripción (por una parte del campo DescDepartamento,
          * si el usuario no pone nada deben aparecer todos los departamentos).
          */
-                require_once 'libreriaValidacionFormulario.php';
-                require_once '../config/confDBPDO.php';
+        require_once 'libreriaValidacionFormulario.php'; // Librería para validar los campos del formulario
+        require_once '../config/confDBPDO.php'; // Archivo con datos de conexión a la base de datos (RUTA, USUARIO, PASS)
 
-                try {
-                    $miDB = new PDO(RUTA, USUARIO, PASS);
-                    $miDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                } catch (PDOException $ex) {
-                    echo "Error de conexión a la base de datos: " . $ex->getMessage() . "<br>";
-                    echo "Código de error: " . $ex->getCode();
-                    exit;
+        /* ==================== Conexión a la base de datos ==================== */
+        try {
+            // Creamos la conexión PDO a la base de datos
+            $miDB = new PDO(RUTA, USUARIO, PASS);
+            // Configuramos PDO para que lance excepciones en caso de error
+            $miDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch (PDOException $ex) {
+            // Si hay un error de conexión, lo mostramos y detenemos la ejecución
+            echo "Error de conexión a la base de datos: " . $ex->getMessage() . "<br>";
+            echo "Código de error: " . $ex->getCode();
+            exit;
+        }
+
+        /* ==================== Inicialización de arrays ==================== */
+        // Array que contendrá los mensajes de error de validación
+        $aErrores = [
+            "T02_DescDepartamento" => ""
+        ];
+
+        // Array que contendrá los datos válidos del formulario
+        $aRespuesta = [
+            "T02_DescDepartamento" => ""
+        ];
+
+        // Variable que indica si la entrada del formulario es correcta
+        $entradaOK = true;
+
+        /* ==================== Procesamiento del formulario ==================== */
+        if (isset($_REQUEST['buscar'])) { // Si se pulsó el botón de búsqueda
+            // Recogemos la descripción introducida por el usuario
+            $T02_DescDepartamento = $_REQUEST['T02_DescDepartamento'] ?? '';
+
+            // Validamos que la descripción sea alfabética (máximo 255 caracteres, obligatorio)
+            $aErrores['T02_DescDepartamento'] = validacionFormularios::comprobarAlfabetico($T02_DescDepartamento, 255, 0, 1);
+
+            // Comprobamos si hay errores
+            foreach ($aErrores as $valor) {
+                if (!empty($valor)) {
+                    $entradaOK = false; // Si hay algún error, no procesamos la búsqueda
+                }
+            }
+
+            // Si no hay errores, guardamos el valor introducido
+            if ($entradaOK) {
+                $aRespuesta["T02_DescDepartamento"] = ($_REQUEST["T02_DescDepartamento"]);
+            }
+        }
+
+        /* ==================== Mostrar el formulario ==================== */
+        if (!isset($_REQUEST['submit']) || !$entradaOK) {
+            ?>
+            <div id="formulario">
+                <h1 style="text-align:center;">Buscar departamento por descripción</h1>
+                <form action="<?= $_SERVER["PHP_SELF"]; ?>" method="post">
+                    <table>
+                        <tr>
+                            <td><label for="T02_DescDepartamento">Descripción:</label></td>
+                            <td><input type="text" name="T02_DescDepartamento" id="T02_DescDepartamento"
+                                       value="<?= (empty($aErrores['T02_DescDepartamento'])) ? ($_REQUEST['T02_DescDepartamento'] ?? '') : ''; ?>"/></td>
+                            <!-- Botón de búsqueda -->
+                            <td><input type="submit" value="Buscar" name="buscar"></td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+            <?php
+        }
+
+        /* ==================== Consulta a la base de datos ==================== */
+        try {
+            if (empty($aRespuesta["T02_DescDepartamento"])) {
+                // Si el usuario no introdujo nada, seleccionamos todos los departamentos
+                $query = "SELECT * FROM T02_Departamento";
+            } else {
+                // Si se introdujo algo, buscamos coincidencias parciales con LIKE
+                $RespuestasSql = "%" . $aRespuesta["T02_DescDepartamento"] . "%";
+                $query = "SELECT * FROM T02_Departamento WHERE T02_DescDepartamento LIKE '$RespuestasSql'";
+            }
+
+            // Ejecutamos la consulta
+            $resultadoConsulta = $miDB->query($query);
+
+            // Creamos la tabla HTML para mostrar los resultados
+            echo '<table border=1px>';
+            echo '<tr style=background-color:lightblue;>';
+            echo '<th>Código</th>';
+            echo '<th>Descripción</th>';
+            echo '<th>Fecha Creación</th>';
+            echo '<th>Volumen Negocio</th>';
+            echo '<th>Fecha Baja</th>';
+            echo '</tr>';
+
+            // Recorremos cada registro devuelto por la consulta
+            while ($aRegistroArray = $resultadoConsulta->fetch(PDO::FETCH_ASSOC)) {
+                echo "<tr>";
+                echo "<td>" . $aRegistroArray["T02_CodDepartamento"] . "</td>";
+                echo "<td>" . $aRegistroArray["T02_DescDepartamento"] . "</td>";
+
+                // Convertimos la fecha de creación a formato d-m-Y
+                $fechaCreacion = new DateTime($aRegistroArray["T02_FechaCreacionDepartamento"]);
+                echo "<td>" . $fechaCreacion->format("d-m-Y") . "</td>";
+
+                // Formateamos el volumen de negocio con dos decimales y símbolo €
+                echo "<td>" . number_format($aRegistroArray["T02_VolumenNegocio"], 2, ',', '.') . '€</td>';
+
+                // Comprobamos si la fecha de baja es nula
+                if (!is_null($aRegistroArray["T02_FechaBajaDepartamento"])) {
+                    $fechaBaja = new DateTime($aRegistroArray["T02_FechaBajaDepartamento"]);
+                    echo "<td>" . $fechaBaja->format("d-m-Y") . "</td>";
+                } else {
+                    echo "<td></td>";
                 }
 
-                $aErrores = [
-                    "T02_DescDepartamento" => ""
-                ];
+                echo "</tr>";
+            }
 
-                $aRespuesta = [
-                    "T02_DescDepartamento" => ""
-                ];
+            // Mostramos el total de registros en la tabla
+            $numReg = $miDB->query("SELECT count(*) FROM T02_Departamento");
+            $totalReg = $numReg->fetchColumn();
+            echo "Total de registros: " . $totalReg;
 
-                $entradaOK = true;
-
-                if (isset($_REQUEST['buscar'])) {
-
-                    $T02_DescDepartamento = $_REQUEST['T02_DescDepartamento'] ?? '';
-
-                    $aErrores['T02_DescDepartamento'] = validacionFormularios::comprobarAlfabetico($T02_DescDepartamento, 255, 0, 1);
-
-                    foreach ($aErrores as $valor) {
-                        if (!empty($valor)) {
-                            $entradaOK = false;
-                        }
-                    }
-
-                    
-                    if ($entradaOK) {
-                        $aRespuesta["T02_DescDepartamento"]=($_REQUEST["T02_DescDepartamento"]);
-                    }
-                }
-
-                if (!isset($_REQUEST['submit']) || !$entradaOK) {
-                    ?>
-                    <div id="formulario">
-                        <h1 style="text-align:center;">Buscar departamento por descripción</h1>
-                    <form action="<?= $_SERVER["PHP_SELF"]; ?>" method="post">
-                        <table>
-                            <tr>
-                                <td><label for="T02_DescDepartamento">Descripción:</label></td>
-                        <td><input type="text" name="T02_DescDepartamento" id="T02_DescDepartamento"
-                               value="<?= (empty($aErrores['T02_DescDepartamento'])) ? ($_REQUEST['T02_DescDepartamento'] ?? '') : ''; ?>"/></td>
-                        
-                        <td><input type="submit" value="Buscar" name="buscar"></td>
-                            </tr>
-                        
-                        <br><br>
-                    </form>
-                    </div>
-                    <?php
-                }
-
-                try {
-                    if(empty($aRespuesta["T02_DescDepartamento"])){
-                   
-                        $query = "SELECT * FROM T02_Departamento";
-                    }
-                    else{
-                    $RespuestasSql="%".$aRespuesta["T02_DescDepartamento"]."%";
-                        
-                        $query= "select * from T02_Departamento where T02_DescDepartamento like '$RespuestasSql'";
-                    }
-                    
-                    $resultadoConsulta= $miDB->query($query);
-                    
-                    echo '<table border 1px>';
-                    echo '<tr style=background-color:lightblue;>';
-                    echo '<th> Código </th>';
-                    echo '<th> Desccripción </th>';
-                    echo '<th> Fecha Creación </th>';
-                    echo '<th> Volumen Negocio </th>';
-                    echo '<th> Fecha Baja </th>';
-                    echo '</tr>';
-                    
-                    while($aRegistroArray=$resultadoConsulta->fetch(PDO::FETCH_ASSOC)){
-                        echo "<tr>";
-                        echo "<td>".$aRegistroArray["T02_CodDepartamento"]."</td>";
-                        echo "<td>".$aRegistroArray["T02_DescDepartamento"]."</td>";
-                        
-                        
-                        $fechaCreacion=new DateTime($aRegistroArray["T02_FechaCreacionDepartamento"]);
-                        echo "<td>".$fechaCreacion->format("d-m-Y")."</td>";
-                        
-                        echo "<td>".number_format($aRegistroArray["T02_VolumenNegocio"],2,',','.').'€</td>';
-                        if(!is_null($aRegistroArray["T02_FechaBajaDepartamento"])){
-                            $fechaBaja=new DateTime($aRegistroArray["T02_FechaBajaDepartamento"]);
-                            echo "<td>".$fechaBaja->format("d-m-Y")."</td>";
-                        }
-                        else{
-                            echo "<td></td>";
-                        }
-                        echo "</tr>";
-                    }
-                    
-                    $numReg=$miDB->query("select count(*) from T02_Departamento");
-                    
-                    $totalReg=$numReg->fetchColumn();
-                    
-                    echo "Total de registros: ".$totalReg;
-                    
-                    } catch (PDOException $ex) {
-                    echo '<p>Error en la base de datos:</p> ';
-                    echo $ex->getMessage() . '<br>Código: ';
-                    echo $ex->getCode();
-                } finally {
-                    unset($miDB);
-                }
-                ?>
+        } catch (PDOException $ex) {
+            // Si ocurre un error en la base de datos lo mostramos
+            echo '<p>Error en la base de datos:</p>';
+            echo $ex->getMessage() . '<br>Código: ';
+            echo $ex->getCode();
+        } finally {
+            // Cerramos la conexión a la base de datos
+            unset($miDB);
+        }
+        ?>
     </main>
 </body>
 </html>

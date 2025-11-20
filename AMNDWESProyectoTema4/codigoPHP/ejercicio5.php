@@ -119,74 +119,90 @@
          * utilizando tres instrucciones insert y una transacción, de tal forma que se añadan los tres registros o no se añada ninguno.
          */
 
-                require_once '../config/confDBPDO.php';
+        require_once '../config/confDBPDO.php'; // Importamos la configuración de la base de datos (RUTA, USUARIO, PASS)
 
-                try {
-                    $miDB = new PDO(RUTA, USUARIO, PASS);
-                    $miDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                } catch (PDOException $ex) {
-                    echo "Error de conexión a la base de datos: " . $ex->getMessage() . "<br>";
-                    echo "Código de error: " . $ex->getCode();
-                    exit;
+        /* ==================== Conexión a la base de datos ==================== */
+        try {
+            // Creamos la conexión PDO a la base de datos
+            $miDB = new PDO(RUTA, USUARIO, PASS);
+            // Configuramos PDO para que lance excepciones en caso de error
+            $miDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch (PDOException $ex) {
+            // Si hay un error de conexión, se muestra el mensaje y el código, y se detiene la ejecución
+            echo "Error de conexión a la base de datos: " . $ex->getMessage() . "<br>";
+            echo "Código de error: " . $ex->getCode();
+            exit;
+        }
+
+        /* ==================== Consulta inicial (opcional) ==================== */
+        // Se ejecuta una consulta inicial para obtener todos los registros (aunque no se usa para nada aquí)
+        $resultadoConsulta = $miDB->query("SELECT * FROM T02_Departamento");
+
+        /* ==================== Inicio de la transacción ==================== */
+        $miDB->beginTransaction(); // Iniciamos la transacción para que todos los inserts se ejecuten juntos
+
+        /* ==================== Primer INSERT ==================== */
+        $query1 = "INSERT INTO T02_Departamento 
+                   (T02_CodDepartamento, T02_DescDepartamento, T02_FechaCreacionDepartamento, T02_VolumenNegocio, T02_FechaBajaDepartamento)
+                   VALUES('AAA','Departamento transacción 1',NOW(),1234,NULL)";
+
+        $miDB->query($query1); // Ejecutamos el primer INSERT
+
+        /* ==================== Segundo INSERT ==================== */
+        $query1 = "INSERT INTO T02_Departamento 
+                   (T02_CodDepartamento, T02_DescDepartamento, T02_FechaCreacionDepartamento, T02_VolumenNegocio, T02_FechaBajaDepartamento)
+                   VALUES('BBB','Departamento transacción 2',NOW(),123,NULL)";
+
+        $miDB->query($query1); // Ejecutamos el segundo INSERT
+
+        /* ==================== Tercer INSERT ==================== */
+        $query1 = "INSERT INTO T02_Departamento 
+                   (T02_CodDepartamento, T02_DescDepartamento, T02_FechaCreacionDepartamento, T02_VolumenNegocio, T02_FechaBajaDepartamento)
+                   VALUES('CCC','Departamento transacción 3',NOW(),12,NULL)";
+
+        $miDB->query($query1); // Ejecutamos el tercer INSERT
+
+        /* ==================== Commit de la transacción ==================== */
+        $miDB->commit(); // Confirmamos la transacción: los tres registros se añaden de forma atómica
+        echo "Insertados correctamente";
+
+        /* ==================== Mostrar los registros ==================== */
+        try {
+            $query = $miDB->query("SELECT * FROM T02_Departamento"); // Consultamos todos los registros
+
+            if ($query->rowCount() > 0) { // Si hay registros
+                echo "<table border='2' style='border-collapse: collapse;'>";
+                echo "<tr style='background-color: lightsteelblue; font-weight: bold;'>";
+
+                // Mostramos los nombres de las columnas
+                for ($i = 0; $i < $query->columnCount(); $i++) {
+                    $nomColumna = $query->getColumnMeta($i)["name"];
+                    echo "<th>{$nomColumna}</th>";
                 }
+                echo "</tr>";
 
-               $resultadoConsulta=$miDB->query("select * from T02_Departamento");
-               
-               $miDB->beginTransaction();
-               
-               $query1="INSERT INTO T02_Departamento 
-                            (T02_CodDepartamento, T02_DescDepartamento,T02_FechaCreacionDepartamento, T02_VolumenNegocio, T02_FechaBajaDepartamento)
-                            VALUES('AAA','Departamento transacción 1',now(),1234,null)";
-                            
-               $miDB->query($query1);
-               
-               $query1="INSERT INTO T02_Departamento 
-                            (T02_CodDepartamento, T02_DescDepartamento,T02_FechaCreacionDepartamento, T02_VolumenNegocio, T02_FechaBajaDepartamento)
-                            VALUES('BBB','Departamento transacción 2',now(),123,null)";
-                            
-               $miDB->query($query1);
-               $query1="INSERT INTO T02_Departamento 
-                            (T02_CodDepartamento, T02_DescDepartamento,T02_FechaCreacionDepartamento, T02_VolumenNegocio, T02_FechaBajaDepartamento)
-                            VALUES('CCC','Departamento transacción 3',now(),12,null)";
-               
-               $miDB->query($query1);
-               
-               
-               $miDB->commit();
-               echo "Insertados correctamente";
-
-                try {
-                    $query = $miDB->query("SELECT * FROM T02_Departamento");
-
-                    if ($query->rowCount() > 0) {
-                        echo "<table border='2' style='border-collapse: collapse;'>";
-                        echo "<tr style='background-color: lightsteelblue; font-weight: bold;'>";
-
-                        for ($i = 0; $i < $query->columnCount(); $i++) {
-                            $nomColumna = $query->getColumnMeta($i)["name"];
-                            echo "<th>{$nomColumna}</th>";
-                        }
-                        echo "</tr>";
-
-                        while ($registro = $query->fetch(PDO::FETCH_OBJ)) {
-                            echo "<tr>";
-                            foreach ($registro as $valor) {
-                                echo "<td style='padding:5px;'>$valor</td>";
-                            }
-                            echo "</tr>";
-                        }
-
-                        echo "</table>";
-                        echo "<h3 style='text-align:center;'>Hay {$query->rowCount()} registros.</h3>";
-                    } else {
-                        echo "<p>No hay departamentos en la base de datos.</p>";
+                // Recorremos cada registro y lo mostramos en la tabla
+                while ($registro = $query->fetch(PDO::FETCH_OBJ)) {
+                    echo "<tr>";
+                    foreach ($registro as $valor) {
+                        echo "<td style='padding:5px;'>$valor</td>";
                     }
-                } catch (PDOException $ex) {
-                    echo "Error al mostrar departamentos: " . $ex->getMessage();
-                } finally {
-                    unset($miDB);
+                    echo "</tr>";
                 }
-                ?>
+
+                echo "</table>";
+                echo "<h3 style='text-align:center;'>Hay {$query->rowCount()} registros.</h3>";
+            } else {
+                echo "<p>No hay departamentos en la base de datos.</p>";
+            }
+        } catch (PDOException $ex) {
+            // Mostramos errores de la consulta
+            echo "Error al mostrar departamentos: " . $ex->getMessage();
+        } finally {
+            // Cerramos la conexión
+            unset($miDB);
+        }
+        ?>
     </main>
 </body>
 </html>

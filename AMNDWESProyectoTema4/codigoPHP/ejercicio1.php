@@ -95,9 +95,11 @@
             Utilizar excepciones automáticas siempre que sea posible en todos los ejercicios.
          */
         
+        // Incluye el archivo de configuración donde se definen la ruta, usuario y contraseña de la base de datos.
         require_once '../config/confDBPDO.php';
-        
-        $aAtributos=array(
+
+        // Array con los nombres de los atributos de la conexión PDO que queremos mostrar.
+        $aAtributos = array(
             'ATTR_AUTOCOMMIT',
             'ATTR_CASE',
             'ATTR_CLIENT_VERSION',
@@ -110,71 +112,78 @@
             'ATTR_SERVER_VERSION',
             'ATTR_DEFAULT_FETCH_MODE'
         );
-        
-        try{
-            $miDB=new PDO(ruta,usuario,pass);
-            
-                echo "<h2>Conexión completada correctamente</h2>";
-                echo "<h4>Atributos de la conexión:</h4>";
-            
-                foreach ($aAtributos as $atributo){
-                    print "<b>Atributo '$atributo': </b>".$miDB->getAttribute(constant("PDO::$atributo"))."<br>";
-                }
-                
-        }catch(PDOException $ex){
-            echo "Error de conexión a la base de datos: ".$ex->getMessage();
-            echo "Codigo de error: ".$ex->getCode();
+
+        /* ==================== Conexión correcta ==================== */
+        try {
+            // Crea una nueva conexión PDO usando los parámetros definidos en confDBPDO.php
+            $miDB = new PDO(RUTA, USUARIO, PASS);
+
+            echo "<h2>Conexión completada correctamente</h2>";
+            echo "<h4>Atributos de la conexión:</h4>";
+
+            // Recorre el array de atributos y los imprime usando getAttribute()
+            foreach ($aAtributos as $atributo) {
+                // constant("PDO::$atributo") convierte el nombre del atributo en constante PDO válida
+                print "<b>Atributo '$atributo': </b>" . $miDB->getAttribute(constant("PDO::$atributo")) . "<br>";
+            }
+
+        } catch (PDOException $ex) {
+            // Captura cualquier excepción relacionada con PDO y muestra el mensaje de error y código.
+            echo "Error de conexión a la base de datos: " . $ex->getMessage();
+            echo "Codigo de error: " . $ex->getCode();
         }
-        
-        
-        
-        
+
+        /* ==================== Conexión con error de driver ==================== */
         echo "<h2>Conexión erronea por error al encontrar el driver</h2>";
-        const ruta2='error:host=10.199.9.104;dbname=DBAMNDWESProyectoTema4';
-        const usuario2='userAMNDWESProyectoTema4';
-        const pass2='paso';
-        try{
-            $miDB=new PDO(ruta2,usuario2,pass2);
-            
-                echo "<h2>Conexión completada correctamente</h2>";
-                echo "<h4>Atributos de la conexión:</h4>";
-            
-                foreach ($aAtributos as $atributo){
-                    print "<b>Atributo '$atributo': </b>".$miDB->getAttribute(constant("PDO::$atributo"))."<br>";
-                }
-            
+
+        // Constantes con parámetros erróneos (driver incorrecto)
+        const ruta2 = 'error:host=localhost;dbname=DBAMNDWESProyectoTema4';
+        const usuario2 = 'userAMNDWESProyectoTema4';
+        const pass2 = 'CD97ertvct$E';
+
+        try {
+            $miDB = new PDO(ruta2, usuario2, pass2);
+
+            echo "<h2>Conexión completada correctamente</h2>";
+            echo "<h4>Atributos de la conexión:</h4>";
+
+            foreach ($aAtributos as $atributo) {
+                print "<b>Atributo '$atributo': </b>" . $miDB->getAttribute(constant("PDO::$atributo")) . "<br>";
+            }
 
         } catch (Exception $ex) {
-            echo "Error ".$ex->getMessage()."<br><br>";
-            echo "Codigo de error: ".$ex->getCode();
+            // Captura cualquier excepción (en este caso, error de driver)
+            echo "Error " . $ex->getMessage() . "<br><br>";
+            echo "Codigo de error: " . $ex->getCode();
         }
-        
-        
-        echo "<h2>Conexión erronea por contraseña incorrecta</h2>";
-        const ruta3='mysql:host=10.199.9.104;dbname=DBAMNDWESProyectoTema4';
-        const usuario3='userAMNDWESProyectoTema4';
-        const pass3='gdfsghsdfg';
-        try{
 
-            $miDB=new PDO(ruta3,usuario3,pass3);
-            
-                        
-                echo "<h2>Conexión completada correctamente</h2>";
-                echo "<h4>Atributos de la conexión:</h4>";
-            
-                foreach ($aAtributos as $atributo){
-                    print "<b>Atributo '$atributo': </b>".$miDB->getAttribute(constant("PDO::$atributo"))."<br>";
-                }
-           
+        /* ==================== Conexión con contraseña incorrecta ==================== */
+        echo "<h2>Conexión erronea por contraseña incorrecta</h2>";
+
+        // Constantes con contraseña incorrecta
+        const ruta3 = 'mysql:host=localhost;dbname=DBAMNDWESProyectoTema4';
+        const usuario3 = 'userAMNDWESProyectoTema4';
+        const pass3 = 'gdfsghsdfg';
+
+        try {
+            $miDB = new PDO(ruta3, usuario3, pass3);
+
+            echo "<h2>Conexión completada correctamente</h2>";
+            echo "<h4>Atributos de la conexión:</h4>";
+
+            foreach ($aAtributos as $atributo) {
+                print "<b>Atributo '$atributo': </b>" . $miDB->getAttribute(constant("PDO::$atributo")) . "<br>";
+            }
+
+        } catch (PDOException $ex) {
+            // Captura error de contraseña incorrecta
+            echo "Password incorrecto: " . $ex->getMessage();
+            echo "Codigo de error: " . $ex->getCode();
         }
-        catch(PDOException $ex){
-            echo "Password incorrecto: ".$ex->getMessage();
-            echo "Codigo de error: ".$ex->getCode();
-        }
-        
+
+        // Se destruye la conexión para liberar recursos
         unset($miDB);
-        ?>
-        
+        ?>        
     </main>
 </body>
 </html>

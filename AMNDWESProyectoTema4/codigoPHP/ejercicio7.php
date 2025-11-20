@@ -120,58 +120,72 @@
          */
         
         
-                require_once '../config/confDBPDO.php';
-                
+        require_once '../config/confDBPDO.php'; 
+        // Incluye la configuración de conexión: constantes RUTA, USUARIO, PASS
 
-                 
-                try {
-                    $miDB = new PDO(RUTA, USUARIO, PASS);
-                    $miDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                    
-                    
-                    
-                    
-                    
-                } catch (PDOException $ex) {
-                    echo "Error de conexión a la base de datos: " . $ex->getMessage() . "<br>";
-                    echo "Código de error: " . $ex->getCode();
-                    exit;
-                }
-                 
-                 
+        /* ==================== Conexión a la base de datos ==================== */
+        try {
+            $miDB = new PDO(RUTA, USUARIO, PASS); // Crear objeto PDO
+            $miDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); 
+            // Configura PDO para lanzar excepciones si hay errores
 
-                try {
-                    $query = $miDB->query("SELECT * FROM T02_Departamento");
+        } catch (PDOException $ex) {
+            echo "Error de conexión a la base de datos: " . $ex->getMessage() . "<br>";
+            echo "Código de error: " . $ex->getCode();
+            exit;
+        }
 
-                    if ($query->rowCount() > 0) {
-                        echo "<table border='2' style='border-collapse: collapse;'>";
-                        echo "<tr style='background-color: lightsteelblue; font-weight: bold;'>";
+        /* ==================== Leer fichero JSON ==================== */
+        $jsonFile = "../tmp/departamentos.json"; // Ruta al fichero JSON
 
-                        for ($i = 0; $i < $query->columnCount(); $i++) {
-                            $nomColumna = $query->getColumnMeta($i)["name"];
-                            echo "<th>{$nomColumna}</th>";
-                        }
-                        echo "</tr>";
+        if (!file_exists($jsonFile)) {
+            die("El fichero JSON no existe en la carpeta tmp.");
+        }
 
-                        while ($registro = $query->fetch(PDO::FETCH_OBJ)) {
-                            echo "<tr>";
-                            foreach ($registro as $valor) {
-                                echo "<td style='padding:5px;'>$valor</td>";
-                            }
-                            echo "</tr>";
-                        }
+        // Leemos el contenido del fichero JSON
+        $jsonData = file_get_contents($jsonFile);
 
-                        echo "</table>";
-                        echo "<h3 style='text-align:center;'>Hay {$query->rowCount()} registros.</h3>";
-                    } else {
-                        echo "<p>No hay departamentos en la base de datos.</p>";
-                    }
-                } catch (PDOException $ex) {
-                    echo "Error al mostrar departamentos: " . $ex->getMessage();
-                } finally {
-                    unset($miDB);
-                }
-                ?>
+        // Convertimos el JSON en array de objetos o arrays asociativos
+        $aDepartamentos = json_decode($jsonData, true); // true para array asociativo
+
+        if (!$aDepartamentos) {
+            die("Error al decodificar el fichero JSON.");
+        }
+
+        /* ==================== Insertar datos en la base de datos ==================== */
+        try {
+            $miDB->beginTransaction(); // Iniciamos transacción
+
+            // Consulta preparada con parámetros
+            $sql = "INSERT INTO T02_Departamento (T02_CodDepartamento, T02_DescDepartamento, T02_FechaCreacionDepartamento, T02_VolumenNegocio, T02_FechaBajaDepartamento) 
+                    VALUES (:cod, :desc, NOW(), :vol, NULL)";
+            $stmt = $miDB->prepare($sql);
+
+            // Recorremos cada departamento del JSON y lo insertamos
+            foreach ($aDepartamentos as $departamento) {
+                $cod = $departamento['T02_CodDepartamento'] ?? '';
+                $desc = $departamento['T02_DescDepartamento'] ?? '';
+                $vol = $departamento['T02_VolumenDepartamento'] ?? 0;
+
+                // Ejecutamos la consulta preparada
+                $stmt->execute([
+                    ':cod' => $cod,
+                    ':desc' => $desc,
+                    ':vol' => $vol
+                ]);
+            }
+
+            $miDB->commit(); // Confirmamos la transacción
+            echo "<h2>Departamentos importados correctamente desde JSON.</h2>";
+
+        } catch (PDOException $ex) {
+            $miDB->rollBack(); // Cancelamos la transacción si hay error
+            echo "Error al insertar datos: " . $ex->getMessage() . "<br>";
+            echo "Código de error: " . $ex->getCode();
+        } finally {
+            unset($miDB); // Cerramos la conexión
+        }
+        ?>
     </main>
 </body>
 </html>

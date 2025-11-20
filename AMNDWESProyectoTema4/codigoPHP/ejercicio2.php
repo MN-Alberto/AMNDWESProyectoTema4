@@ -100,26 +100,34 @@
          * Fecha de ultima modificación: 03/11/2025
          * Mostrar el contenido de la tabla Departamento y el número de registros
          */
+        
+        // Incluye el archivo de configuración con los datos de conexión
         require_once '../config/confDBPDO.php';
-        try{
-            $miDB=new PDO($ruta,$usuario,$pass);
-            
-            
-            $tabla1=$miDB->query("select * from T02_Departamento");
-            $resultadoTabla=$tabla1->fetchAll(PDO::FETCH_ASSOC);
-            
-            
+
+        try {
+            // Crear una nueva conexión PDO usando los datos de configuración
+            $miDB = new PDO(RUTA, USUARIO, PASS);
+
+            // Ejecuta la consulta para obtener todos los registros de la tabla T02_Departamento
+            $tabla1 = $miDB->query("SELECT * FROM T02_Departamento");
+
+            // Recupera todos los resultados en un array asociativo
+            $resultadoTabla = $tabla1->fetchAll(PDO::FETCH_ASSOC);
+
+            // Inicia una tabla HTML para mostrar los resultados
             echo "<table border=2px>";
-            
+
+            // Fila de encabezado con nombres de columnas
             echo "<tr style='background-color:lightblue;'>";
                 echo "<td>T02_CodDepartamento</td>";
                 echo "<td>T02_DescDepartamento</td>";
                 echo "<td>T02_FechaCreacionDepartamento</td>";
                 echo "<td>T02_VolumenNegocio</td>";
                 echo "<td>T02_FechaBajaDepartamento</td>";
-                echo "</tr>";
-             
-            foreach ($resultadoTabla as $fila){
+            echo "</tr>";
+
+            // Recorre cada fila del resultado y la muestra en la tabla HTML
+            foreach ($resultadoTabla as $fila) {
                 echo "<tr>";
                 echo "<td>{$fila['T02_CodDepartamento']}</td>";
                 echo "<td>{$fila['T02_DescDepartamento']}</td>";
@@ -128,20 +136,24 @@
                 echo "<td>{$fila['T02_FechaBajaDepartamento']}</td>";
                 echo "</tr>";
             }
-            
-            echo "</table><br><br>";
-            
-            
-            $numReg=$miDB->query("select count(*) from T02_Departamento");
-            
-            $resultadoReg=$numReg->fetchColumn();
-            
-            echo "<h3>Número de registros: ".$resultadoReg."</h3>";
 
-            
-        }catch(PDOException $ex){
+            echo "</table><br><br>";
+
+            // Ejecuta otra consulta para contar el número de registros de la tabla
+            $numReg = $miDB->query("SELECT COUNT(*) FROM T02_Departamento");
+
+            // Recupera el resultado como un valor simple
+            $resultadoReg = $numReg->fetchColumn();
+
+            // Muestra el número total de registros
+            echo "<h3>Número de registros: " . $resultadoReg . "</h3>";
+
+        } catch (PDOException $ex) {
+            // Captura errores de conexión o consulta y muestra el mensaje
             echo $ex->getMessage();
         }
+
+        // Cierra la conexión para liberar recursos
         unset($miDB);
         ?>
     </main>
