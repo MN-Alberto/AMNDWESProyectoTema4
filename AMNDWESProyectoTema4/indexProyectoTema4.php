@@ -88,10 +88,36 @@
     </header>
     <main>
         <h2><b>CONTENIDO</b></h2>
-       
-        <h4><a href="mostrarCodigo/mostrarCreacion.php">Script de creación</a></h4>
-        <h4><a href="mostrarCodigo/mostrarInsert.php">Script de inserción inicial</a></h4>
-        <h4><a href="mostrarCodigo/mostrarBorrado.php">Script de borrado</a></h4>
+        <table border solid black 2px>
+            <tr id="encabezado">
+                <td style="width: 200px;">DESCRIPCIÓN</td>
+                <td style="width: 100px;">MOSTRAR</td>
+                <td style="width: 200px;">DESCRIPCIÓN</td>
+                <td style="width: 100px;">MOSTRAR</td>
+            </tr>
+            
+            <tr>
+                <td>Creación de la base de Datos y del usuario.</td>
+                <td><a href="mostrarCodigo/mostrarCreacion.php">Creación</a></td>
+                <td>Librería validación formularios.</td>
+                <td><a href="mostrarCodigo/mostrarLibreria.php">Librería</a></td>
+            </tr>
+            
+            <tr>
+                <td>Carga Inicial de la base de Datos.</td>
+                <td><a href="mostrarCodigo/mostrarInsert.php">Inserts</a></td>
+                <td>Fichero config PDO</td>
+                <td><a href="mostrarCodigo/mostrarPDO.php">Config</a></td>
+            </tr>
+            
+            <tr>
+                <td>Borrado de la base de Datos.</td>
+                <td><a href="mostrarCodigo/mostrarBorrado.php">Corrado</a></td>
+            </tr>
+            
+        </table>
+        
+        <br><br><br>
         
         <table border solid black 2px>
             <tr id="encabezado">

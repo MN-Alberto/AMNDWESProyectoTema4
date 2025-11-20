@@ -120,87 +120,106 @@
          *  modificar los ejercicios anteriores para que utilicen consultas preparadas). 
          * Probar consultas preparadas sin bind, pasando los parámetros en un array a execute.
          */
-                require_once '../config/confDBPDO.php';
-                
+        
+        require_once '../config/confDBPDO.php'; // Importa configuración de conexión a la base de datos
 
-                 $aDepartamentos=[
-                   ['T02_CodDepartamento'=>'EDU',
-                    'T02_DescDepartamento'=>'Departamento de Educación Física',
-                    'T02_VolumenDepartamento'=>324.7],
-                     
-                   ['T02_CodDepartamento'=>'LIT',
-                    'T02_DescDepartamento'=>'Departamento de literatura',
-                    'T02_VolumenDepartamento'=>6434.7],
-                     
-                   ['T02_CodDepartamento'=>'ADE',
-                    'T02_DescDepartamento'=>'Departamento de administracion de empresas',
-                    'T02_VolumenDepartamento'=>3523.7]
-                 ];
-                 
-                 
-                try {
-                    $miDB = new PDO(RUTA, USUARIO, PASS);
-                    $miDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                    
-                    $miDB->beginTransaction();
-                    
-                    $query=
-                            <<<SQL
-                                insert into T02_Departamento(T02_CodDepartamento,T02_DescDepartamento,T02_FechaCreacionDepartamento,T02_VolumenNegocio,T02_FechaBajaDepartamento)
-                                values (:cod,:desc,now(),:vol,null)
-                            SQL;
-                    
-                    $consPreparada=$miDB->prepare($query);
-                    
-                    foreach ($aDepartamentos as $departamento){
-                        $consPreparada->bindParam(':cod', $departamento['T02_CodDepartamento']);
-                        $consPreparada->bindParam(':desc', $departamento['T02_DescDepartamento']);
-                        $consPreparada->bindParam(':vol', $departamento['T02_VolumenDepartamento']);
-                    
-                        $consPreparada->execute();
-                    }
-                    $miDB->commit();
-                    
-                } catch (PDOException $ex) {
-                    echo "Error de conexión a la base de datos: " . $ex->getMessage() . "<br>";
-                    echo "Código de error: " . $ex->getCode();
-                    exit;
+        /* ==================== Definición de los nuevos departamentos ==================== */
+        $aDepartamentos = [
+            [
+                'T02_CodDepartamento' => 'EDU',
+                'T02_DescDepartamento' => 'Departamento de Educación Física',
+                'T02_VolumenDepartamento' => 324.7
+            ],
+            [
+                'T02_CodDepartamento' => 'LIT',
+                'T02_DescDepartamento' => 'Departamento de literatura',
+                'T02_VolumenDepartamento' => 6434.7
+            ],
+            [
+                'T02_CodDepartamento' => 'ADE',
+                'T02_DescDepartamento' => 'Departamento de administración de empresas',
+                'T02_VolumenDepartamento' => 3523.7
+            ]
+        ];
+
+        try {
+            /* ==================== Conexión a la base de datos ==================== */
+            $miDB = new PDO(RUTA, USUARIO, PASS); // Creamos objeto PDO
+            $miDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // Excepciones ante errores
+
+            /* ==================== Iniciamos la transacción ==================== */
+            $miDB->beginTransaction(); // Si algo falla, podemos revertir todos los inserts
+
+            /* ==================== Preparación de la consulta ==================== */
+            $query = <<<SQL
+                INSERT INTO T02_Departamento(
+                    T02_CodDepartamento,
+                    T02_DescDepartamento,
+                    T02_FechaCreacionDepartamento,
+                    T02_VolumenNegocio,
+                    T02_FechaBajaDepartamento
+                )
+                VALUES (:cod, :desc, NOW(), :vol, NULL)
+            SQL;
+
+            $consPreparada = $miDB->prepare($query); // Creamos la consulta preparada
+
+            /* ==================== Inserción de cada departamento ==================== */
+            foreach ($aDepartamentos as $departamento) {
+                // Asignamos los valores del array a los parámetros de la consulta
+                $consPreparada->bindParam(':cod', $departamento['T02_CodDepartamento']);
+                $consPreparada->bindParam(':desc', $departamento['T02_DescDepartamento']);
+                $consPreparada->bindParam(':vol', $departamento['T02_VolumenDepartamento']);
+
+                $consPreparada->execute(); // Ejecutamos la consulta para cada departamento
+            }
+
+            $miDB->commit(); // Confirmamos la transacción: todos los registros se insertan de forma atómica
+
+        } catch (PDOException $ex) {
+            // En caso de error, se muestra mensaje y código, y se detiene la ejecución
+            echo "Error de conexión a la base de datos o inserción: " . $ex->getMessage() . "<br>";
+            echo "Código de error: " . $ex->getCode();
+            exit;
+        }
+
+        /* ==================== Mostrar todos los registros de la tabla ==================== */
+        try {
+            $query = $miDB->query("SELECT * FROM T02_Departamento"); // Consulta de todos los registros
+
+            if ($query->rowCount() > 0) { // Si hay registros
+                echo "<table border='2' style='border-collapse: collapse;'>";
+                echo "<tr style='background-color: lightsteelblue; font-weight: bold;'>";
+
+                // Cabeceras de la tabla según las columnas
+                for ($i = 0; $i < $query->columnCount(); $i++) {
+                    $nomColumna = $query->getColumnMeta($i)["name"];
+                    echo "<th>{$nomColumna}</th>";
                 }
-                 
-                 
+                echo "</tr>";
 
-                try {
-                    $query = $miDB->query("SELECT * FROM T02_Departamento");
-
-                    if ($query->rowCount() > 0) {
-                        echo "<table border='2' style='border-collapse: collapse;'>";
-                        echo "<tr style='background-color: lightsteelblue; font-weight: bold;'>";
-
-                        for ($i = 0; $i < $query->columnCount(); $i++) {
-                            $nomColumna = $query->getColumnMeta($i)["name"];
-                            echo "<th>{$nomColumna}</th>";
-                        }
-                        echo "</tr>";
-
-                        while ($registro = $query->fetch(PDO::FETCH_OBJ)) {
-                            echo "<tr>";
-                            foreach ($registro as $valor) {
-                                echo "<td style='padding:5px;'>$valor</td>";
-                            }
-                            echo "</tr>";
-                        }
-
-                        echo "</table>";
-                        echo "<h3 style='text-align:center;'>Hay {$query->rowCount()} registros.</h3>";
-                    } else {
-                        echo "<p>No hay departamentos en la base de datos.</p>";
+                // Recorremos todos los registros y mostramos cada uno en fila de la tabla
+                while ($registro = $query->fetch(PDO::FETCH_OBJ)) {
+                    echo "<tr>";
+                    foreach ($registro as $valor) {
+                        echo "<td style='padding:5px;'>$valor</td>";
                     }
-                } catch (PDOException $ex) {
-                    echo "Error al mostrar departamentos: " . $ex->getMessage();
-                } finally {
-                    unset($miDB);
+                    echo "</tr>";
                 }
-                ?>
+
+                echo "</table>";
+                echo "<h3 style='text-align:center;'>Hay {$query->rowCount()} registros.</h3>";
+            } else {
+                echo "<p>No hay departamentos en la base de datos.</p>";
+            }
+
+        } catch (PDOException $ex) {
+            // Manejo de errores en la consulta de lectura
+            echo "Error al mostrar departamentos: " . $ex->getMessage();
+        } finally {
+            unset($miDB); // Cerramos la conexión
+        }
+        ?>
     </main>
 </body>
 </html>

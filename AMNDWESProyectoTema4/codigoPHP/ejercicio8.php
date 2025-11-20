@@ -118,34 +118,49 @@
          * Página web que toma datos (código y descripción) de la tabla Departamento y guarda en un fichero departamento.xml.
          * (COPIA DE SEGURIDAD / EXPORTAR). El fichero exportado se encuentra en el directorio .../tmp/ del servidor. 
          */
-                require_once '../config/confDBPDO.php';
-                
-                 
-                try {
-                    $miDB = new PDO(RUTA, USUARIO, PASS);
-                    $miDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                    
-                    $query='select T02_CodDepartamento,T02_DescDepartamento from T02_Departamento';
-                    
-                    $consPreparada=$miDB->prepare($query);
-                    $consPreparada->execute();
-                    
-                    $aObjResultados=$consPreparada->fetchAll(PDO::FETCH_OBJ);
-                       
-                    $stringJson= json_encode($aObjResultados,JSON_PRETTY_PRINT);
-                    
-                    file_put_contents("../tmp/departamentosJson.json", $stringJson);
-                    
-                    echo "<h2>Los departamentos han sido exportados con exito, compruebe la carpeta tmp en busca del archivo</h2>";
-                    
-                } catch (PDOException $ex) {
-                    echo "Error de conexión a la base de datos: " . $ex->getMessage() . "<br>";
-                    echo "Código de error: " . $ex->getCode(); 
-                } finally {
-                    unset($miDB);
-                } 
-                
-                ?>
+        
+        require_once '../config/confDBPDO.php'; 
+        // Incluye la configuración de conexión a la base de datos (constantes RUTA, USUARIO, PASS)
+
+        /* ==================== Conexión a la base de datos ==================== */
+        try {
+            // Crear objeto PDO para la conexión a la base de datos
+            $miDB = new PDO(RUTA, USUARIO, PASS);
+
+            // Configurar PDO para lanzar excepciones ante errores
+            $miDB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+            // Consulta para obtener únicamente el código y descripción de los departamentos
+            $query = 'SELECT T02_CodDepartamento, T02_DescDepartamento FROM T02_Departamento';
+
+            // Preparar la consulta para ejecución
+            $consPreparada = $miDB->prepare($query);
+
+            // Ejecutar la consulta
+            $consPreparada->execute();
+
+            // Recuperar todos los resultados como objetos (PDO::FETCH_OBJ)
+            $aObjResultados = $consPreparada->fetchAll(PDO::FETCH_OBJ);
+
+            // Convertir los resultados a formato JSON con sangría para mejor lectura
+            $stringJson = json_encode($aObjResultados, JSON_PRETTY_PRINT);
+
+            // Guardar el JSON en un fichero dentro de la carpeta tmp
+            file_put_contents("../tmp/departamentosJson.json", $stringJson);
+
+            // Mensaje de éxito
+            echo "<h2>Los departamentos han sido exportados con éxito, compruebe la carpeta tmp en busca del archivo</h2>";
+
+        } catch (PDOException $ex) {
+            // Capturar y mostrar errores de conexión o ejecución de la consulta
+            echo "Error de conexión a la base de datos: " . $ex->getMessage() . "<br>";
+            echo "Código de error: " . $ex->getCode(); 
+        } finally {
+            // Liberar la conexión a la base de datos
+            unset($miDB);
+        } 
+
+        ?>
     </main>
 </body>
 </html>
